@@ -1,6 +1,6 @@
 "use server"
 
-import { createClient as createServerClient } from "@supabase/ssr"
+import { createServiceRoleClient } from "@/lib/supabase/server"
 import { Resend } from "resend"
 
 const resend = new Resend(process.env.RESEND_API_KEY)
@@ -27,15 +27,7 @@ export async function submitContact(
 
   try {
     // Create Supabase client with service role key for full permissions
-    const supabase = createServerClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!,
-      {
-        auth: {
-          persistSession: false,
-        },
-      },
-    )
+    const supabase = createServiceRoleClient()
 
     // Store in Supabase
     const { error: dbError } = await supabase.from("contact_submissions").insert({
