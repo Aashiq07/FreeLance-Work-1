@@ -29,6 +29,10 @@ export const metadata: Metadata = {
   ],
   authors: [{ name: "Rare Drop" }],
   creator: "Rare Drop",
+  icons: {
+    icon: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/raredrop-A5T4qhmQeGMY9N1qRjVmvw0CYUR6GL.jpg",
+    apple: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/raredrop-A5T4qhmQeGMY9N1qRjVmvw0CYUR6GL.jpg",
+  },
   openGraph: {
     type: "website",
     locale: "en_US",

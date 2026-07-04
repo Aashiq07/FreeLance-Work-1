@@ -3,7 +3,7 @@
 import Link from "next/link"
 import Image from "next/image"
 import { motion } from "framer-motion"
-import { Instagram, Twitter, Linkedin, Youtube, ArrowUp } from "lucide-react"
+import { Instagram, Linkedin, ArrowUp } from "lucide-react"
 import { Button } from "@/components/ui/button"
 
 const quickLinks = [
@@ -29,9 +29,7 @@ const socialLinks = [
     href: "https://instagram.com/raredropmedia",
     label: "Instagram",
   },
-  { icon: Twitter, href: "https://twitter.com/raredrop", label: "Twitter" },
   { icon: Linkedin, href: "https://linkedin.com/company/raredrop", label: "LinkedIn" },
-  { icon: Youtube, href: "https://youtube.com/@raredrop", label: "YouTube" },
 ]
 
 export function Footer() {
