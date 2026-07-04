@@ -29,17 +29,9 @@ async function performInitialization() {
 
     const supabase = createSupabaseClient(supabaseUrl, serviceRoleKey)
 
-    // Check if contact_submissions table exists
-    const { data, error } = await supabase
-      .from("contact_submissions")
-      .select("id")
-      .limit(1)
-
-    if (error && error.code === "PGRST116") {
-      // Table doesn't exist, create it
-      console.log("[v0] Creating contact_submissions table...")
-
-      const sqlCreateTable = `
+    // First, try to create the table directly
+    const { error: createTableError } = await supabase.rpc("exec_sql", {
+      sql: `
         CREATE TABLE IF NOT EXISTS public.contact_submissions (
           id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
           name TEXT NOT NULL,
@@ -67,17 +59,25 @@ async function performInitialization() {
         GRANT USAGE ON SCHEMA public TO anon, authenticated;
         GRANT INSERT ON public.contact_submissions TO anon, authenticated;
         GRANT SELECT ON public.contact_submissions TO service_role;
-      `
+      `,
+    })
 
-      // Execute using a raw query through the SQL editor API
-      // For now, we'll just log that we need to create it
-      console.log(
-        "[v0] Table creation SQL prepared. If table does not exist, please run the migration script.",
-      )
-    } else if (!error) {
+    // If RPC doesn't exist, try direct select to check if table exists
+    const { data, error } = await supabase
+      .from("contact_submissions")
+      .select("id")
+      .limit(1)
+
+    if (!error) {
       console.log("[v0] Database initialized successfully - contact_submissions table exists")
-    } else if (error.code !== "PGRST116") {
-      console.warn("[v0] Database initialization check error:", error.message)
+    } else if (error.code === "PGRST116") {
+      // Table doesn't exist
+      console.warn("[v0] contact_submissions table does not exist - creation may have failed")
+      if (createTableError) {
+        console.warn("[v0] Table creation error:", createTableError.message)
+      }
+    } else {
+      console.warn("[v0] Database check error:", error.message)
     }
   } catch (err) {
     console.error("[v0] Database initialization error:", err)
