@@ -1,11 +1,17 @@
 import type { Metadata, Viewport } from "next"
 import { Inter } from "next/font/google"
 import { Analytics } from "@vercel/analytics/next"
+import { initializeDatabase } from "@/lib/init-db"
 import "./globals.css"
 
 const inter = Inter({
   subsets: ["latin"],
   variable: "--font-inter",
+})
+
+// Initialize database on startup
+initializeDatabase().catch((err) => {
+  console.error("[v0] Failed to initialize database:", err)
 })
 
 export const metadata: Metadata = {

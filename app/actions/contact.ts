@@ -3,12 +3,19 @@
 import { createServiceRoleClient } from "@/lib/supabase/server"
 import { Resend } from "resend"
 
-const resend = new Resend(process.env.RESEND_API_KEY)
 const OWNER_EMAIL = "raredrop007@gmail.com"
 
 export type ContactState = {
   success: boolean
   error: string | null
+}
+
+function getResendClient() {
+  const apiKey = process.env.RESEND_API_KEY
+  if (!apiKey) {
+    throw new Error("RESEND_API_KEY environment variable is not set")
+  }
+  return new Resend(apiKey)
 }
 
 export async function submitContact(
@@ -59,6 +66,7 @@ ${message}
 This message was sent from your website contact form.
     `
 
+    const resend = getResendClient()
     const { error: emailError } = await resend.emails.send({
       from: "Contact Form <onboarding@resend.dev>",
       to: OWNER_EMAIL,
@@ -85,7 +93,7 @@ This message was sent from your website contact form.
     })
 
     if (emailError) {
-      console.log("[v0] Email sending error:", emailError)
+      console.error("[v0] Email sending error:", JSON.stringify(emailError, null, 2))
       return {
         success: false,
         error: "Failed to send email. Please try again.",
@@ -94,7 +102,12 @@ This message was sent from your website contact form.
 
     return { success: true, error: null }
   } catch (err) {
-    console.log("[v0] Contact submission error:", err)
+    const errorMessage = err instanceof Error ? err.message : String(err)
+    console.error("[v0] Contact submission error:", errorMessage)
+    
+    // Log detailed error for debugging in production
+    console.error("[v0] Full error details:", err)
+    
     return {
       success: false,
       error: "Something went wrong. Please try again.",
