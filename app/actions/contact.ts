@@ -1,6 +1,10 @@
 "use server"
 
 import { createClient } from "@/lib/supabase/server"
+import { Resend } from "resend"
+
+const resend = new Resend(process.env.RESEND_API_KEY)
+const OWNER_EMAIL = "raredrop007@gmail.com"
 
 export type ContactState = {
   success: boolean
@@ -22,8 +26,9 @@ export async function submitContact(
   }
 
   try {
+    // Store in Supabase
     const supabase = await createClient()
-    const { error } = await supabase.from("contact_submissions").insert({
+    const { error: dbError } = await supabase.from("contact_submissions").insert({
       name,
       email,
       phone,
@@ -31,12 +36,59 @@ export async function submitContact(
       message,
     })
 
-    if (error) {
-      console.log("[v0] Supabase insert error:", error.message)
+    if (dbError) {
+      console.log("[v0] Supabase insert error:", dbError.message)
       return {
         success: false,
         error: "Something went wrong. Please try again.",
       }
+    }
+
+    // Send email notification to owner
+    const emailContent = `
+New Contact Form Submission
+
+Name: ${name}
+Email: ${email}
+Phone: ${phone || "Not provided"}
+Business Type: ${business || "Not provided"}
+
+Message:
+${message}
+
+---
+This message was sent from your website contact form.
+    `
+
+    const { error: emailError } = await resend.emails.send({
+      from: "Contact Form <onboarding@resend.dev>",
+      to: OWNER_EMAIL,
+      replyTo: email,
+      subject: `New Contact Form Submission from ${name}`,
+      text: emailContent,
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <h2 style="color: #333;">New Contact Form Submission</h2>
+          <div style="background-color: #f5f5f5; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
+            <p><strong>Name:</strong> ${name}</p>
+            <p><strong>Email:</strong> <a href="mailto:${email}">${email}</a></p>
+            <p><strong>Phone:</strong> ${phone || "Not provided"}</p>
+            <p><strong>Business Type:</strong> ${business || "Not provided"}</p>
+          </div>
+          <div style="margin-bottom: 20px;">
+            <h3 style="color: #333; margin-top: 0;">Message:</h3>
+            <p style="white-space: pre-wrap; color: #555;">${message}</p>
+          </div>
+          <hr style="border: none; border-top: 1px solid #ddd; margin: 20px 0;">
+          <p style="color: #999; font-size: 12px;">This message was sent from your website contact form.</p>
+        </div>
+      `,
+    })
+
+    if (emailError) {
+      console.log("[v0] Email sending error:", emailError.message)
+      // Don't fail if email fails - data is saved in DB
+      return { success: true, error: null }
     }
 
     return { success: true, error: null }
