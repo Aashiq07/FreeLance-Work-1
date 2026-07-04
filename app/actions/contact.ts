@@ -29,7 +29,7 @@ export async function submitContact(
     // Create Supabase client with service role key for full permissions
     const supabase = createServiceRoleClient()
 
-    // Store in Supabase
+    // Store in Supabase (non-critical - we'll continue even if it fails)
     const { error: dbError } = await supabase.from("contact_submissions").insert({
       name,
       email,
@@ -40,12 +40,7 @@ export async function submitContact(
 
     if (dbError) {
       console.log("[v0] Supabase insert error:", dbError.message, dbError)
-      console.log("[v0] Supabase URL:", process.env.NEXT_PUBLIC_SUPABASE_URL)
-      console.log("[v0] Service role key present:", !!process.env.SUPABASE_SERVICE_ROLE_KEY)
-      return {
-        success: false,
-        error: `Database error: ${dbError.message}`,
-      }
+      console.log("[v0] Warning: Could not save to database, but will attempt to send email")
     }
 
     // Send email notification to owner
@@ -90,9 +85,11 @@ This message was sent from your website contact form.
     })
 
     if (emailError) {
-      console.log("[v0] Email sending error:", emailError.message)
-      // Don't fail if email fails - data is saved in DB
-      return { success: true, error: null }
+      console.log("[v0] Email sending error:", emailError)
+      return {
+        success: false,
+        error: "Failed to send email. Please try again.",
+      }
     }
 
     return { success: true, error: null }
